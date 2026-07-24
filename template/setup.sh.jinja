@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+PROJECT_SLUG="{{ project_slug }}"
+
+echo "Project: ${PROJECT_SLUG}"
+echo
+
+if ! command -v uv >/dev/null 2>&1; then
+    echo "Error: uv が見つかりません。"
+    echo "macOSでは次を実行してください:"
+    echo "  brew install uv"
+    exit 1
+fi
+
+if ! command -v git >/dev/null 2>&1; then
+    echo "Error: git が見つかりません。"
+    exit 1
+fi
+
+if [ ! -f "pyproject.toml" ]; then
+    echo "Error: pyproject.toml が見つかりません。"
+    echo "生成されたプロジェクトのルートで実行してください。"
+    exit 1
+fi
+
+echo "Installing dependencies..."
+uv sync
+
+if [ ! -d ".git" ]; then
+    echo "Initializing Git repository..."
+    git init
+else
+    echo "Git repository already initialized."
+fi
+
+echo "Installing pre-commit hook..."
+uv run pre-commit install
+
+echo "Running quality checks..."
+uv run pre-commit run --all-files
+
+echo "Staging generated files..."
+git add .
+
+if git diff --cached --quiet; then
+    echo "No changes to commit."
+else
+    echo "Creating initial commit..."
+    git commit -m "Initial commit"
+fi
+
+echo
+read -r -p "Create private GitHub repository '${PROJECT_SLUG}' and push? [y/N] " ans
+
+case "$ans" in
+    [Yy]|[Yy][Ee][Ss])
+        if ! command -v gh >/dev/null 2>&1; then
+            echo "Error: GitHub CLI が見つかりません。"
+            echo "macOSでは次を実行してください:"
+            echo "  brew install gh"
+            exit 1
+        fi
+
+        if ! gh auth status >/dev/null 2>&1; then
+            echo "Error: GitHub CLIにログインしていません。"
+            echo "次を実行してください:"
+            echo "  gh auth login"
+            exit 1
+        fi
+
+        if git remote get-url origin >/dev/null 2>&1; then
+            echo "Error: origin リモートはすでに設定されています。"
+            echo "既存のGitHubリポジトリを確認してください:"
+            git remote get-url origin
+            exit 1
+        fi
+
+        echo "Creating GitHub repository..."
+        gh repo create "$PROJECT_SLUG" \
+            --private \
+            --source=. \
+            --remote=origin \
+            --push
+
+        echo
+        echo "GitHub repository created and pushed."
+        ;;
+
+    *)
+        echo
+        echo "GitHub repository creation skipped."
+        echo "後から作成する場合:"
+        echo "  gh repo create \"${PROJECT_SLUG}\" --private --source=. --remote=origin --push"
+        ;;
+esac
+
+echo
+echo "Setup completed."
