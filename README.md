@@ -11,7 +11,7 @@ brew install copier uv
 ## プロジェクトの作成
 
 ```bash
-copier copy gh:kemmo-2/python_template my-project
+copier copy gh:kemmo2/python_template my-project
 ```
 
 ## 作成したプロジェクトのセットアップ
