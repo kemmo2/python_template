@@ -35,7 +35,16 @@ else
     git commit -m "Initial commit"
 fi
 
-echo
-echo "Setup completed."
-echo "To create the GitHub repository, run:"
-echo "  gh repo create --private --source=. --push"
+read -p "Create GitHub repository? [y/N] " ans
+
+if [[ "$ans" =~ ^[Yy]$ ]]; then
+
+    REPO_NAME=$(grep '^project_slug:' .copier-answers.yml | awk '{print $2}')
+
+    gh repo create "$REPO_NAME" --private --source=. --push
+else
+    echo
+    echo "Setup completed."
+    echo "To create the GitHub repository, run:"
+    echo "  gh repo create --private --source=. --push"
+fi
