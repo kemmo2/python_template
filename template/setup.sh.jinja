@@ -7,6 +7,10 @@ PROJECT_SLUG="{{ project_slug }}"
 echo "Project: ${PROJECT_SLUG}"
 echo
 
+# -----------------------------------------------------------------------------
+# 必要なコマンドの確認
+# -----------------------------------------------------------------------------
+
 if ! command -v uv >/dev/null 2>&1; then
     echo "Error: uv が見つかりません。"
     echo "macOSでは次を実行してください:"
@@ -25,21 +29,65 @@ if [ ! -f "pyproject.toml" ]; then
     exit 1
 fi
 
+# -----------------------------------------------------------------------------
+# Python環境の構築
+# -----------------------------------------------------------------------------
+
 echo "Installing dependencies..."
 uv sync
+echo
+
+# -----------------------------------------------------------------------------
+# Gitリポジトリの初期化
+# -----------------------------------------------------------------------------
 
 if [ ! -d ".git" ]; then
     echo "Initializing Git repository..."
-    git init
+    git init -b main
 else
     echo "Git repository already initialized."
+
+    CURRENT_BRANCH="$(git branch --show-current)"
+
+    if [ "$CURRENT_BRANCH" = "master" ]; then
+        echo "Renaming branch from master to main..."
+        git branch -m main
+    fi
 fi
+
+echo
+
+# -----------------------------------------------------------------------------
+# pre-commitの登録
+# -----------------------------------------------------------------------------
 
 echo "Installing pre-commit hook..."
 uv run pre-commit install
+echo
+
+# -----------------------------------------------------------------------------
+# Ruffによる自動修正・整形
+# -----------------------------------------------------------------------------
+
+echo "Fixing lint issues with Ruff..."
+uv run ruff check --fix .
+echo
+
+echo "Formatting files with Ruff..."
+uv run ruff format .
+echo
+
+# -----------------------------------------------------------------------------
+# 全品質チェック
+# -----------------------------------------------------------------------------
 
 echo "Running quality checks..."
 uv run pre-commit run --all-files
+echo
+
+# -----------------------------------------------------------------------------
+# 初回commit
+# -----------------------------------------------------------------------------
 
 echo "Staging generated files..."
 git add .
@@ -48,15 +96,31 @@ if git diff --cached --quiet; then
     echo "No changes to commit."
 else
     echo "Creating initial commit..."
-    git commit -m "Initial commit"
+
+    if ! git commit -m "Initial commit"; then
+        echo
+        echo "Error: Initial commit failed."
+        echo "修正されたファイルを確認し、次を再実行してください:"
+        echo "  git add ."
+        echo "  git commit -m \"Initial commit\""
+        exit 1
+    fi
 fi
 
 echo
-read -r -p "Create private GitHub repository '${PROJECT_SLUG}' and push? [y/N] " ans
+
+# -----------------------------------------------------------------------------
+# GitHubリポジトリ作成
+# -----------------------------------------------------------------------------
+
+read -r -p \
+    "Create private GitHub repository '${PROJECT_SLUG}' and push? [y/N] " \
+    ans
 
 case "$ans" in
     [Yy]|[Yy][Ee][Ss])
         if ! command -v gh >/dev/null 2>&1; then
+            echo
             echo "Error: GitHub CLI が見つかりません。"
             echo "macOSでは次を実行してください:"
             echo "  brew install gh"
@@ -64,6 +128,7 @@ case "$ans" in
         fi
 
         if ! gh auth status >/dev/null 2>&1; then
+            echo
             echo "Error: GitHub CLIにログインしていません。"
             echo "次を実行してください:"
             echo "  gh auth login"
@@ -71,13 +136,16 @@ case "$ans" in
         fi
 
         if git remote get-url origin >/dev/null 2>&1; then
+            echo
             echo "Error: origin リモートはすでに設定されています。"
-            echo "既存のGitHubリポジトリを確認してください:"
+            echo "現在のorigin:"
             git remote get-url origin
             exit 1
         fi
 
-        echo "Creating GitHub repository..."
+        echo
+        echo "Creating private GitHub repository '${PROJECT_SLUG}'..."
+
         gh repo create "$PROJECT_SLUG" \
             --private \
             --source=. \
@@ -91,8 +159,13 @@ case "$ans" in
     *)
         echo
         echo "GitHub repository creation skipped."
-        echo "後から作成する場合:"
-        echo "  gh repo create \"${PROJECT_SLUG}\" --private --source=. --remote=origin --push"
+        echo
+        echo "後から作成する場合は、次を実行してください:"
+        echo "  gh repo create \"${PROJECT_SLUG}\" \\"
+        echo "      --private \\"
+        echo "      --source=. \\"
+        echo "      --remote=origin \\"
+        echo "      --push"
         ;;
 esac
 
