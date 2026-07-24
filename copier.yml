@@ -1,0 +1,33 @@
+_subdirectory: template
+_templates_suffix: .jinja
+_answers_file: .copier-answers.yml
+
+project_name:
+  type: str
+  help: プロジェクトの表示名
+  default: My Python Project
+
+project_slug:
+  type: str
+  help: GitHubリポジトリや配布パッケージに使う名前
+  default: "{{ project_name | lower | replace(' ', '-') | replace('_', '-') }}"
+
+package_name:
+  type: str
+  help: Pythonのimportに使うパッケージ名
+  default: "{{ project_slug | replace('-', '_') }}"
+
+python_version:
+  type: str
+  help: 使用するPythonバージョン
+  default: "3.13"
+
+description:
+  type: str
+  help: プロジェクトの説明
+  default: ""
+
+author_name:
+  type: str
+  help: 作者名
+  default: ""
