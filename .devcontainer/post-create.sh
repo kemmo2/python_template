@@ -7,4 +7,10 @@ python -m venv .venv
 npm --prefix client install
 chmod +x start-dev.sh
 
-echo "Codespace setup complete. Run ./start-dev.sh"
+echo "Installing Codex CLI..."
+curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=true sh
+
+echo "Codespace setup complete."
+echo "Run ./start-dev.sh to start the app."
+echo "Run codex to start Codex CLI."
+echo "For first sign-in in Codespaces, use: codex login --device-auth"
