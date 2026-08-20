@@ -392,6 +392,81 @@ iPhone は主に以下を担当します。
 - Git 操作
 - Web アプリのプレビュー
 
+### iPhone での起動手順
+
+#### 1. GitHub から Codespace を開く
+
+Safari でこのリポジトリを開き、`codespaces-react-python` ブランチを選択します。
+
+その後、次の順で Codespaces を開きます。
+
+```text
+Code
+  → Codespaces
+```
+
+すでに Codespace がある場合は既存の Codespace を開きます。初回だけ `Create codespace` で新しく作成します。
+
+#### 2. Terminal を開いてアプリを起動する
+
+Codespace の Terminal で次を実行します。
+
+```bash
+./start-dev.sh
+```
+
+起動すると以下の2つのサーバーが動きます。
+
+```text
+React / Vite : 5173
+FastAPI      : 8000
+```
+
+#### 3. React の 5173 番ポートを開く
+
+Codespaces の下部パネルから `PORTS` を開き、`5173` の行を探します。
+
+`5173` の Forwarded Address またはブラウザで開くアイコンから React のプレビューを開きます。iPhone では、エディタ内プレビューより **Safari の別タブで開く**方が見やすいです。
+
+転送URLは概ね次の形式です。
+
+```text
+https://<codespace-name>-5173.app.github.dev
+```
+
+> **注意:** Safari のアドレス欄に `http://localhost:5173` を直接入力しないでください。iPhone の `localhost` は Codespace ではなく iPhone 自身を指します。必ず Codespaces の `PORTS` に表示される Forwarded Address を開きます。
+
+`PORTS` に `5173` が表示されない場合は、`5173` を手動で Forward / Add Port してから開きます。
+
+#### 4. React → FastAPI の接続を確認する
+
+React の画面に次のように表示されれば正常です。
+
+```text
+React + FastAPI
+
+API: FastAPI is running
+```
+
+React は `/api/health` を呼び、Vite Proxy を経由して FastAPI の `8000` 番ポートへ接続しています。
+
+#### 5. FastAPI を直接確認する場合
+
+`PORTS` で `8000` を開き、URLの末尾に `/docs` を付けると Swagger UI を確認できます。
+
+```text
+https://<codespace-name>-8000.app.github.dev/docs
+```
+
+#### iPhone でのおすすめ運用
+
+画面が狭いため、次のように役割を分けると操作しやすくなります。
+
+```text
+Safari タブ1: GitHub Codespaces / Terminal / Codex
+Safari タブ2: React の 5173 プレビュー
+```
+
 通勤中などのスマートフォン開発では、細かなコード編集をすべてタッチ操作で行うより、Codex に変更内容を指示し、`git diff` とブラウザプレビューで確認する使い方が向いています。
 
 ## Run Without Codespaces
