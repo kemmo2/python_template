@@ -101,6 +101,8 @@ Codespace の開発環境を定義します。
 - Python / ESLint / Prettier などの VS Code Extension
 - Codespace 作成後に実行するセットアップスクリプト
 
+ポートの転送自体は `devcontainer.json` の `forwardPorts` で定義します。ポートの公開範囲は `portsAttributes` では固定せず、アプリ起動時に `start-dev.sh` から GitHub CLI を使って `private` に設定します。
+
 ### `.devcontainer/post-create.sh`
 
 Codespace が初めて作成されたときに自動実行されます。
@@ -171,6 +173,14 @@ npm --prefix client run dev
 
 FastAPI はバックグラウンドで、Vite はフォアグラウンドで起動します。
 
+GitHub Codespaces 上では、起動後に `5173` と `8000` の転送ポートを GitHub CLI で `private` に設定します。ポートがまだ転送されていない場合に備えて、短時間リトライします。
+
+```bash
+gh codespace ports visibility 5173:private 8000:private -c "$CODESPACE_NAME"
+```
+
+`private` の転送ポートは、GitHub に認証した Codespace の作成者だけがアクセスできます。
+
 ## Start with GitHub Codespaces
 
 ### 1. Branch を選択
@@ -207,6 +217,22 @@ Codespace の Terminal で実行します。
 | --- | ---: |
 | React / Vite | 5173 |
 | FastAPI | 8000 |
+
+Codespaces 上では `start-dev.sh` が両方の転送ポートを `private` に設定します。
+
+現在の Codespace ですでに `public` になっているポートをすぐに戻したい場合は、Terminal で次を実行できます。
+
+```bash
+gh codespace ports visibility 5173:private 8000:private -c "$CODESPACE_NAME"
+```
+
+可視性は次のコマンドで確認できます。
+
+```bash
+gh codespace ports --json sourcePort,visibility -c "$CODESPACE_NAME"
+```
+
+`5173` と `8000` が `private` なら、プレビューURLを知っているだけの第三者はアクセスできません。
 
 ### 4. React をプレビュー
 
@@ -274,7 +300,7 @@ FastAPI の Swagger UI は次のパスです。
 /docs
 ```
 
-例えば Codespaces で公開された FastAPI URL が次の場合、
+例えば Codespaces で転送された FastAPI URL が次の場合、
 
 ```text
 https://<codespace>-8000.app.github.dev
@@ -285,6 +311,8 @@ Swagger UI は次になります。
 ```text
 https://<codespace>-8000.app.github.dev/docs
 ```
+
+ポートを `private` にしている場合、このURLへのアクセスには Codespace 作成者としての GitHub 認証が必要です。
 
 ## Development Workflow
 
